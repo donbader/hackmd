@@ -305,11 +305,36 @@ if (config.facebook) {
         passport.authenticate('facebook')(req, res, next);
     });
     //facebook auth callback
+    /*
     app.get('/auth/facebook/callback',
         passport.authenticate('facebook', {
             successReturnToOrRedirect: config.serverurl + '/',
             failureRedirect: config.serverurl + '/'
         }));
+    */
+    app.get('/auth/facebook/callback', (req, res, next) => {
+        passport.authenticate('facebook', (err, user, info) => {
+            if (err) return next(err);
+            if (!user) return res.redirect(config.serverurl + '/');
+            if(req.user) {
+                models.User.update({
+                    references: user.id
+                }, {
+                    where: {
+                        id: req.user.id
+                    }
+                }).catch((err) => {
+                    return next(err);
+                });
+                return res.redirect(config.serverurl + '/');
+            } else {
+                req.logIn(user, function(err) {
+                    if (err) return next(err);
+                    return res.redirect(config.serverurl + '/');
+                });
+            }
+        })(req, res, next);
+    });
 }
 //twitter auth
 if (config.twitter) {
