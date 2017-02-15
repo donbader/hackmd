@@ -318,7 +318,7 @@ if (config.facebook) {
             if (!user) return res.redirect(config.serverurl + '/');
             if(req.user) {
                 models.User.update({
-                    references: user.id
+                    account_references: user.id
                 }, {
                     where: {
                         id: req.user.id
