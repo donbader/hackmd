@@ -305,13 +305,6 @@ if (config.facebook) {
         passport.authenticate('facebook')(req, res, next);
     });
     //facebook auth callback
-    /*
-    app.get('/auth/facebook/callback',
-        passport.authenticate('facebook', {
-            successReturnToOrRedirect: config.serverurl + '/',
-            failureRedirect: config.serverurl + '/'
-        }));
-    */
     app.get('/auth/facebook/callback', (req, res, next) => {
         passport.authenticate('facebook', (err, user, info) => {
             if (err) return next(err);
@@ -323,10 +316,11 @@ if (config.facebook) {
                     where: {
                         id: req.user.id
                     }
+                }).then(() => {
+                    return res.redirect(config.serverurl + '/');
                 }).catch((err) => {
                     return next(err);
                 });
-                return res.redirect(config.serverurl + '/');
             } else {
                 req.logIn(user, function(err) {
                     if (err) return next(err);
