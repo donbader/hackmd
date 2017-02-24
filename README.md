@@ -1,7 +1,9 @@
 HackMD
 ===
 
-[![Join the chat at https://gitter.im/hackmdio/hackmd](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/hackmdio/hackmd?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/hackmdio/hackmd][gitter-image]][gitter-url]
+[![build status][travis-image]][travis-url]
+
 
 HackMD lets you create realtime collaborative markdown notes on all platforms.  
 Inspired by Hackpad, with more focus on speed and flexibility.  
@@ -48,9 +50,9 @@ Browsers Requirement
 Prerequisite
 ---
 
-- Node.js 4.x or up (test up to 6.7.0)
+- Node.js 6.x or up (test up to 7.5.0)
 - Database (PostgreSQL, MySQL, MariaDB, SQLite, MSSQL) use charset `utf8`
-- npm
+- npm (and its dependencies, especially [uWebSockets](https://github.com/uWebSockets/uWebSockets#nodejs-developers), [node-gyp](https://github.com/nodejs/node-gyp#installation))
 
 Get started
 ---
@@ -116,6 +118,7 @@ Environment variables (will overwrite other server configs)
 | HMD_USECDN | `true` or `false` | set to use CDN resources or not (default is `true`) |
 | HMD_ALLOW_ANONYMOUS | `true` or `false` | set to allow anonymous usage (default is `true`) |
 | HMD_ALLOW_FREEURL | `true` or `false` | set to allow new note by accessing not exist note url |
+| HMD_DEFAULT_PERMISSION | `freely`, `editable`, `limited`, `locked` or `private` | set notes default permission (only applied on signed users) |
 | HMD_DB_URL | `mysql://localhost:3306/database` | set the db url |
 | HMD_FACEBOOK_CLIENTID | no example | Facebook API client id |
 | HMD_FACEBOOK_CLIENTSECRET | no example | Facebook API client secret |
@@ -130,15 +133,15 @@ Environment variables (will overwrite other server configs)
 | HMD_DROPBOX_CLIENTSECRET | no example | Dropbox API client secret |
 | HMD_GOOGLE_CLIENTID | no example | Google API client id |
 | HMD_GOOGLE_CLIENTSECRET | no example | Google API client secret |
-| HMD_LDAP_URL | ldap://example.com | url of LDAP server |
+| HMD_LDAP_URL | `ldap://example.com` | url of LDAP server |
 | HMD_LDAP_BINDDN | no example | bindDn for LDAP access |
 | HMD_LDAP_BINDCREDENTIALS | no example | bindCredentials for LDAP access |
-| HMD_LDAP_TOKENSECRET | supersecretkey | secret used for generating access/refresh tokens |
-| HMD_LDAP_SEARCHBASE | o=users,dc=example,dc=com | LDAP directory to begin search from |
-| HMD_LDAP_SEARCHFILTER | (uid={{username}}) | LDAP filter to search with |
+| HMD_LDAP_TOKENSECRET | `supersecretkey` | secret used for generating access/refresh tokens |
+| HMD_LDAP_SEARCHBASE | `o=users,dc=example,dc=com` | LDAP directory to begin search from |
+| HMD_LDAP_SEARCHFILTER | `(uid={{username}})` | LDAP filter to search with |
 | HMD_LDAP_SEARCHATTRIBUTES | no example | LDAP attributes to search with |
-| HMD_LDAP_TLS_CA | no example | Root CA for LDAP TLS in PEM format |
-| HMD_LDAP_PROVIDERNAME | My institution | Optional name to be displayed at login form indicating the LDAP provider | 
+| HMD_LDAP_TLS_CA | `server-cert.pem, root.pem` | Root CA for LDAP TLS in PEM format (use comma to separate) |
+| HMD_LDAP_PROVIDERNAME | `My institution` | Optional name to be displayed at login form indicating the LDAP provider | 
 | HMD_IMGUR_CLIENTID | no example | Imgur API client id |
 | HMD_EMAIL | `true` or `false` | set to allow email signin |
 | HMD_ALLOW_EMAIL_REGISTER | `true` or `false` | set to allow email register (only applied when email is set, default is `true`) |
@@ -164,6 +167,7 @@ Application settings `config.json`
 | usecdn | `true` or `false` | set to use CDN resources or not (default is `true`) |
 | allowanonymous | `true` or `false` | set to allow anonymous usage (default is `true`) |
 | allowfreeurl | `true` or `false` | set to allow new note by accessing not exist note url |
+| defaultpermission | `freely`, `editable`, `limited`, `locked` or `private` | set notes default permission (only applied on signed users) |
 | dburl | `mysql://localhost:3306/database` | set the db url, if set this variable then below db config won't be applied |
 | db | `{ "dialect": "sqlite", "storage": "./db.hackmd.sqlite" }` | set the db configs, [see more here](http://sequelize.readthedocs.org/en/latest/api/sequelize/) |
 | sslkeypath | `./cert/client.key` | ssl key path (only need when you set usessl) |
@@ -220,3 +224,7 @@ Additionally, now can show other clients' selections.
 See more at [http://operational-transformation.github.io/](http://operational-transformation.github.io/)
 
 **License under MIT.**
+[gitter-image]: https://badges.gitter.im/Join%20Chat.svg
+[gitter-url]: https://gitter.im/hackmdio/hackmd?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+[travis-image]: https://travis-ci.org/hackmdio/hackmd.svg?branch=master
+[travis-url]: https://travis-ci.org/hackmdio/hackmd
