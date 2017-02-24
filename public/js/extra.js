@@ -1153,6 +1153,11 @@ md.use(slidesharePlugin);
 md.use(speakerdeckPlugin);
 md.use(pdfPlugin);
 
+
+var markdownitCalendar = require('../calendar/index');
+md.use(markdownitCalendar);
+
+
 export default {
   md
 };
