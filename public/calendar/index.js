@@ -190,13 +190,6 @@ module.exports = function calendarPlugin(md, options) {
             start = state.bMarks[currentLine] + state.tShift[currentLine];
             end = state.eMarks[currentLine];
 
-            // Meet day line
-            var day = parseDate(state.src, start, end, date);
-            if (day) {
-                currentDay = day;
-                continue;
-            } //======================================================
-
             // Meet event line
             event = parseEvent(state.src, start, end);
             if (currentDay && event) {
@@ -204,6 +197,16 @@ module.exports = function calendarPlugin(md, options) {
                 renderInfo['Content'][currentDay].push(event);
                 continue;
             } //======================================================
+
+            // Meet day line
+            var day = parseDate(state.src, start, end, date);
+            if (day) {
+                currentDay = day;
+                continue;
+            } else {
+                currentDay = undefined;
+            } //======================================================
+
 
             // Meet End of line
             if (state.src[start] === endMarkerStr[0] && parseEndLine(state.src, start, end)) {
