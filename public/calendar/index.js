@@ -1,6 +1,11 @@
 'use strict';
+import { calendarTableCreate, datesClickEvent, closeDescription } from './calendar.js';
 
-module.exports = function calendarPlugin(md, options) {
+const calendarArray = [{}];
+exports.datesClickEvent = datesClickEvent;
+exports.closeDescription = closeDescription;
+
+exports.calendarPlugin = function (md, options) {
     var name = 'calendar',
         startMarkerStr = '#[' + name + '=',
         endMarkerStr = '#[/' + name + ']',
@@ -27,11 +32,48 @@ module.exports = function calendarPlugin(md, options) {
 
 
     function renderDefault(tokens, idx, _options, env, self) {
-        var token = tokens[idx];
+        const token = tokens[idx].info;
         console.log("Token :", token);
-        return '<div class="calendar">' +
-            JSON.stringify(token.info, null, 2).replace(' ', '&nbsp').replace('\n', '<br>') +
-            '</div>';
+
+        // --------------------------------
+        const data = [];
+        const month = parseInt(token.Date.month);
+        const year = parseInt(token.Date.year);
+
+        calendarArray.forEach((value, index) => {
+            if (value.month === month && value.year === year)
+                ;
+            else{
+                calendarArray.push({
+                    month: month,
+                    year: year
+                })
+            }
+        })
+        console.log(calendarArray)
+
+        for (let localTime in token.Content){
+            const time = new Date(localTime);
+            const date = time.getDate();
+            const event = token.Content[localTime];
+
+            event.forEach((value)=>{
+                data.push({
+                  date: date,
+                  tag: value.title,
+                  des: value.description,
+                });
+            })
+        }
+
+        var tbl = calendarTableCreate(month, year, data);
+        // return '<div class="calendar">'+
+        //     JSON.stringify(token.info, null, 2).replace(' ', '&nbsp').replace('\n', '<br>') +
+        //     '</div>';
+
+        return '<div class="calendar">'
+        + $(tbl)[0].outerHTML
+        + '</div>';
     }
 
 
@@ -235,4 +277,4 @@ module.exports = function calendarPlugin(md, options) {
     });
     md.renderer.rules[name] = renderDefault;
 
-};
+}

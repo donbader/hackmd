@@ -1147,8 +1147,7 @@ md.use(pdfPlugin);
 
 
 var markdownitCalendar = require('../calendar/index');
-md.use(markdownitCalendar);
-
+md.use(markdownitCalendar.calendarPlugin);
 
 export default {
   md
