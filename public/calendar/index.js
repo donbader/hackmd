@@ -1,280 +1,211 @@
-'use strict';
-import { calendarTableCreate, datesClickEvent, closeDescription } from './calendar.js';
+require('./calendar.css')
+import createCalendarHTML from './calendar'
 
-const calendarArray = [{}];
-exports.datesClickEvent = datesClickEvent;
-exports.closeDescription = closeDescription;
+module.exports = function calendarPlugin(md, options) {
+  let name = 'calendar',
+    startMarkerStr = '#[' + name + '=',
+    endMarkerStr = '#[/' + name + ']',
+    DATE_REGEX = /<!--\s*(\d+)\s*-->/,
+    EVENT_REGEX = /@\[(.*?)\](.*)/
 
-exports.calendarPlugin = function (md, options) {
-    var name = 'calendar',
-        startMarkerStr = '#[' + name + '=',
-        endMarkerStr = '#[/' + name + ']',
-        DATE_REGEX = /<!--\s*(\d+)\s*-->/,
-        EVENT_REGEX = /@\[(.*?)\](.*)/;
+/*************************************************************
+ * Default validate and render function
+ */
 
-    /*************************************************************
-     * Default validate and render function
-     */
+  function validateParamsDefault (params) {
+    // return true if params is valid
+    params = params.trim().split(' ')
+    try {
+      let year = parseInt(params[0])
+      let month = parseInt(params[1])
 
-    function validateParamsDefault(params) {
-        // return true if params is valid
-        params = params.trim().split(' ');
-        try {
-            var year = parseInt(params[0]);
-            var month = parseInt(params[1]);
+      return month <= 12 && month >= 1
+    } catch (err) {
+      return false
+    }
+  }
 
-            return month <= 12 && month >= 1;
+  function renderDefault (tokens, idx, _options, env, self) {
+    const data = tokens[idx].info
+    const table = createCalendarHTML(data)
+    return '<div class="markdown-it-calendar">' + table + '</div>'
+  }
 
-        } catch (err) {
-            return false;
-        }
+  /*************************************************************
+   * Helper functions
+   */
+  function isValidDate (d) {
+    // time structure must be {year: 2017, month: 12, date: 30, time: "13:14"}
+    try {
+      let result = new Date(d.year, d.month - 1, d.date)
+      let valid = d.year === result.getFullYear() &&
+              d.month === (result.getMonth() + 1) &&
+              d.date === result.getDate()
+
+      return valid ? result : false
+    } catch (err) {
+      return false
+    }
+    return false
+  }
+
+  function isValidTime (str) {
+    // input str must be "xx:xx"
+    try {
+      str = str.split(':')
+      let hour = parseInt(str[0])
+      let minute = parseInt(str[1])
+      return hour < 24 && hour > -1 && minute < 60 && minute > -1
+    } catch (err) {
+      return false
+    }
+  }
+
+  function parseStartLine (src, start, end, validateFunc) {
+    // Return earlier if not match
+    let valid = src[end - 1] === ']'
+    if (!valid) {
+      return false
     }
 
-
-    function renderDefault(tokens, idx, _options, env, self) {
-        const token = tokens[idx].info;
-        console.log("Token :", token);
-
-        // --------------------------------
-        const data = [];
-        const month = parseInt(token.Date.month);
-        const year = parseInt(token.Date.year);
-
-        calendarArray.forEach((value, index) => {
-            if (value.month === month && value.year === year)
-                ;
-            else{
-                calendarArray.push({
-                    month: month,
-                    year: year
-                })
-            }
-        })
-        console.log(calendarArray)
-
-        for (let localTime in token.Content){
-            const time = new Date(localTime);
-            const date = time.getDate();
-            const event = token.Content[localTime];
-
-            event.forEach((value)=>{
-                data.push({
-                  date: date,
-                  tag: value.title,
-                  des: value.description,
-                });
-            })
-        }
-
-        var tbl = calendarTableCreate(month, year, data);
-        // return '<div class="calendar">'+
-        //     JSON.stringify(token.info, null, 2).replace(' ', '&nbsp').replace('\n', '<br>') +
-        //     '</div>';
-
-        return '<div class="calendar">'
-        + $(tbl)[0].outerHTML
-        + '</div>';
+    valid = src.substring(start, start + startMarkerStr.length) === startMarkerStr
+    if (!valid) {
+      return false
     }
 
-
-    /*************************************************************
-     * Helper functions
-     */
-    function isValidDate(time) {
-        // time structure must be {year: 2017, month: 12, date: 30, time: "13:14"}
-        try {
-            var year = (time['year']).toString()
-            var month = (time['month']).toString()
-            var date = (time['date'] || '').toString()
-            var time = (time['time'] || '').toString()
-            var str = [month, date, year, time].join(" ");
-            var result = Date.parse(str);
-            if (isNaN(result)) {
-                return false;
-            }
-
-            // Ensure the month is same
-            var newDate = new Date(result);
-            if (newDate.getMonth() === parseInt(month) - 1)
-                return newDate;
-
-        } catch (err) {
-            return false;
-        }
-        return false;
+    valid = validateFunc(src.substring(start + startMarkerStr.length, end - 1))
+    if (!valid) {
+      return false
     }
 
+    let params = src.substring(start + startMarkerStr.length, end - 1).trim().split(' ')
+    return {
+      year: parseInt(params[0]),
+      month: parseInt(params[1])
+    }
+  }
 
-    function isValidTime(str) {
-        // input str must be "xx:xx"
-        try {
-            str = str.split(":");
-            var hour = parseInt(str[0]);
-            var minute = parseInt(str[1]);
-            return hour < 24 && hour > -1 && minute < 60 && minute > -1;
-        } catch (err) {
-            return false;
-        }
+  function parseEndLine (src, start, end) {
+    return src.substring(start, end).trim() == endMarkerStr
+  }
+
+  function parseDate (src, start, end, time) {
+    // extract a valid Date
+    let lineStr = src.substring(start, end).trim()
+    try {
+      let date = lineStr.match(DATE_REGEX)
+      let localTime = Object.assign({}, time)
+      localTime['date'] = parseInt(date[1])
+      return isValidDate(localTime)
+    } catch (err) {
+      return false
+    }
+    return false
+  }
+
+  function parseEvent (src, start, end) {
+    let lineStr = src.substring(start, end).trim()
+    try {
+      let event = lineStr.match(EVENT_REGEX)
+      return {
+        title: event[1],
+        description: event[2]
+      }
+    } catch (err) {
+      return false
+    }
+    return false
+  }
+
+  function addToken (state, params) {
+    let token = state.push(params.type, params.tag || 'div', params.nesting)
+    token.markup = params.markup || ''
+    token.block = params.block || true
+    token.content = params.content || ''
+    if ('info' in params) {
+      token.info = params.info
+    }
+    if ('map' in params) {
+      token.map = params.map
+    }
+    return token
+  }
+
+  /*************************************************************/
+
+  options = options || {}
+
+  let validateParam = options.validateParam || validateParamsDefault,
+    render = options.render || renderDefault
+
+  /*************************************************************
+   * Rule function
+   */
+  function calendarRule (state, startLine, endLine, silent) {
+    let currentLine, currentDay,
+      autoClosed = 0,
+      token,
+      start = state.bMarks[startLine] + state.tShift[startLine],
+      end = state.eMarks[startLine],
+      renderInfo = {
+        Date: {},
+        Content: {}
+      }
+
+    // check the first line is correct
+    let date = parseStartLine(state.src, start, end, validateParam)
+    if (date === false) {
+      return false
+    }
+    if (silent) {
+      return true
     }
 
-    function parseStartLine(src, start, end, validateFunc) {
-        // Return earlier if not match
-        var valid = src[end - 1] === "]"
-        if (!valid) {
-            return false;
-        }
+    renderInfo['Date'] = date
 
-        valid = src.substring(start, start + startMarkerStr.length) === startMarkerStr;
-        if (!valid) {
-            return false;
-        }
+    // iterate the lines
+    for (currentLine = startLine + 1; currentLine < endLine; ++currentLine) {
+      start = state.bMarks[currentLine] + state.tShift[currentLine]
+      end = state.eMarks[currentLine]
 
-        valid = validateFunc(src.substring(start + startMarkerStr.length, end - 1));
-        if (!valid) {
-            return false;
-        }
+      // Meet day line
+      let day = parseDate(state.src, start, end, date)
+      if (day) {
+        currentDay = day
+        continue
+      } // ======================================================
 
-        var params = src.substring(start + startMarkerStr.length, end - 1).trim().split(" ");
-        return {
-            year: params[0],
-            month: params[1]
-        }
+      // Meet event line
+      event = parseEvent(state.src, start, end)
+      if (currentDay && event) {
+        renderInfo['Content'][currentDay] = renderInfo['Content'][currentDay] || []
+        renderInfo['Content'][currentDay].push(event)
+        continue
+      } // ======================================================
 
-    }
+      // Meet End of line
+      if (state.src[start] === endMarkerStr[0] && parseEndLine(state.src, start, end)) {
+        autoClosed = 1
+        break
+      } // ======================================================
+    } // end for (iterate the lines)
 
-    function parseEndLine(src, start, end) {
-        return src.substring(start, end).trim() == endMarkerStr;
-    }
+    state.line = currentLine + autoClosed
+    // add token(calendar_open) to [tokens ...]
+    token = addToken(state, {
+      type: name,
+      nesting: 0,
+      markup: startMarkerStr,
+      info: renderInfo,
+      map: [startLine, state.line],
+      content: ''
+    })
 
-    function parseDate(src, start, end, time) {
-        // extract a valid Date
-        var lineStr = src.substring(start, end).trim();
-        try {
-            // var date = lineStr.match(/\(\s*(\d+)\s*\):/)
-            var date = lineStr.match(DATE_REGEX);
-            var localTime = Object.assign({}, time);
-            localTime['date'] = parseInt(date[1]);
-            return isValidDate(localTime);
-        } catch (err) {
-            return false;
-        }
-        return false;
-    }
+    return true
+  }
 
-
-    function parseEvent(src, start, end) {
-        var lineStr = src.substring(start, end).trim();
-        try {
-            var event = lineStr.match(EVENT_REGEX);
-            return {
-                title: event[1],
-                description: event[2]
-            }
-        } catch (err) {
-            return false;
-        }
-        return false;
-    }
-
-    function addToken(state, params) {
-        var token = state.push(params.type, params.tag || "div", params.nesting);
-        token.markup = params.markup || "";
-        token.block = params.block || true;
-        token.content = params.content || "";
-        if ("info" in params) {
-            token.info = params.info;
-        }
-        if ("map" in params) {
-            token.map = params.map;
-        }
-        return token
-    }
-
-
-    /*************************************************************/
-
-    options = options || {};
-
-    var validateParam = options.validateParam || validateParamsDefault,
-        render = options.render || renderDefault;
-
-
-    /*************************************************************
-     * Rule function
-     */
-    function calendarRule(state, startLine, endLine, silent) {
-        var currentLine,
-            autoClosed = 0,
-            token,
-            start = state.bMarks[startLine] + state.tShift[startLine],
-            end = state.eMarks[startLine],
-            renderInfo = {
-                Date: {},
-                Content: {}
-            };
-
-        var currentDay = undefined;
-
-        // check the first line is correct
-        var date = parseStartLine(state.src, start, end, validateParam);
-        if (date === false) {
-            return false;
-        }
-        if (silent) {
-            return true;
-        }
-
-        renderInfo['Date'] = date
-
-
-        // iterate the lines
-        for (currentLine = startLine + 1; currentLine < endLine; ++currentLine) {
-            start = state.bMarks[currentLine] + state.tShift[currentLine];
-            end = state.eMarks[currentLine];
-
-            // Meet event line
-            event = parseEvent(state.src, start, end);
-            if (currentDay && event) {
-                renderInfo['Content'][currentDay] = renderInfo['Content'][currentDay] || [];
-                renderInfo['Content'][currentDay].push(event);
-                continue;
-            } //======================================================
-
-            // Meet day line
-            var day = parseDate(state.src, start, end, date);
-            if (day) {
-                currentDay = day;
-                continue;
-            } else {
-                currentDay = undefined;
-            } //======================================================
-
-
-            // Meet End of line
-            if (state.src[start] === endMarkerStr[0] && parseEndLine(state.src, start, end)) {
-                autoClosed = 1;
-                break;
-            } //======================================================
-
-        } // end for (iterate the lines)
-
-        state.line = currentLine + autoClosed;
-        // add token(calendar_open) to [tokens ...]
-        token = addToken(state, {
-            type: name,
-            nesting: 0,
-            markup: startMarkerStr,
-            info: renderInfo,
-            map: [startLine, state.line],
-            content: ""
-        });
-
-        return true;
-    }
-
-    md.block.ruler.before('fence', name, calendarRule, {
-        alt: ['paragraph', 'reference', 'blockquote', 'list']
-    });
-    md.renderer.rules[name] = renderDefault;
-
+  md.block.ruler.before('fence', name, calendarRule, {
+    alt: ['paragraph', 'blockquote', 'list']
+  })
+  md.renderer.rules[name] = renderDefault
 }
