@@ -935,6 +935,7 @@ md.use(require('markdown-it-imsize'));
 md.use(require('markdown-it-emoji'), {
     shortcuts: {}
 });
+md.use(require('../markdown-it-calendar/index'));
 
 emojify.setConfig({
     blacklist: {
@@ -1144,11 +1145,6 @@ md.use(tocPlugin);
 md.use(slidesharePlugin);
 md.use(speakerdeckPlugin);
 md.use(pdfPlugin);
-
-
-var markdownitCalendar = require('../calendar/index');
-md.use(markdownitCalendar);
-
 
 export default {
   md
