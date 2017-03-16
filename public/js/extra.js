@@ -935,7 +935,7 @@ md.use(require('markdown-it-imsize'));
 md.use(require('markdown-it-emoji'), {
     shortcuts: {}
 });
-md.use(require('markdown-it-calendar'));
+md.use(require('../markdown-it-calendar/index'));
 
 emojify.setConfig({
     blacklist: {
